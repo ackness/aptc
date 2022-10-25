@@ -3,8 +3,7 @@
 ![Version](https://img.shields.io/badge/aptc-v0.0.1-green)
 ![GitHub Org's stars](https://img.shields.io/github/stars/ackness/aptc?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/ackness/aptc?style=social)
-
-[//]: # (![Pypi]&#40;https://img.shields.io/pypi/dm/aptc&#41;)
+![Pypi](https://img.shields.io/pypi/dm/aptc)
 
 ---
 
@@ -40,7 +39,7 @@ client.get_account_transactions(example_address)
 
 ### Send Transaction
 
-Detail information about transaction, please refer to [examples/example2.py](https://github.com/ackness/aptc/examples/example2.py)
+Detail information about transaction, please refer to [examples/example2.py](https://github.com/ackness/aptc/blob/main/examples/example2.py)
 
 ```python
 import time
