@@ -2,14 +2,12 @@ import time
 
 from loguru import logger
 
-from aptc import APTClient, HttpxProvider, APTOS_NODE_URL_LIST, Account, APT
+from aptc import Account, APT, new_client
 
 # init logger
 logger.add("example2.log")
 
-APT_NODE_URL = APTOS_NODE_URL_LIST[0]
-client = APTClient(HttpxProvider(APT_NODE_URL))
-logger.info(f"NODE: {APT_NODE_URL}")
+client = new_client()
 
 # submit transaction
 # load your private key
