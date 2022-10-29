@@ -20,16 +20,16 @@ class HttpxProvider(BaseProvider):
     def __del__(self):
         self.close()
 
-    def _get(self, api: str = '', params: Optional[Dict] = None):
+    def _get(self, api: str = '', params: Optional[Dict] = None, **kwargs):
         f = self.patch_url(api)
-        return self.client.get(url=f, params=params, headers=self.DEFAULT_HEADERS)
+        return self.client.get(url=f, params=params, headers=self.DEFAULT_HEADERS, **kwargs)
 
-    def _post(self, api: str = '', params: Optional[Dict] = None):
+    def _post(self, api: str = '', params: Optional[Dict] = None, **kwargs):
         f = self.patch_url(api)
-        return self.client.post(url=f, json=params, headers=self.DEFAULT_HEADERS)
+        return self.client.post(url=f, json=params, headers=self.DEFAULT_HEADERS, **kwargs)
 
-    def get(self, api: str = '', params_dict: Optional[Dict] = None):
-        return self._get(api, params_dict).json()
+    def get(self, api: str = '', params_dict: Optional[Dict] = None, **kwargs):
+        return self._get(api, params_dict, **kwargs).json()
 
-    def post(self, api: str = '', params_dict: Optional[Dict] = None):
-        return self._post(api, params_dict).json()
+    def post(self, api: str = '', params_dict: Optional[Dict] = None, **kwargs):
+        return self._post(api, params_dict, **kwargs).json()

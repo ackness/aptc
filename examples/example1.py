@@ -1,13 +1,13 @@
 from loguru import logger
 
-from aptc import APTClient, HttpxProvider, APTOS_NODE_URL_LIST
+from aptc import APTClient, HttpxProvider, APTOS_NODE_URL_LIST, new_client
 
 # init logger
 logger.add("example1.log")
 
-APT_NODE_URL = APTOS_NODE_URL_LIST[0]
-client = APTClient(HttpxProvider(APT_NODE_URL))
-logger.info(f"NODE: {APT_NODE_URL}")
+# APT_NODE_URL = APTOS_NODE_URL_LIST[0]
+# client = APTClient(HttpxProvider(APT_NODE_URL))
+client = new_client()
 
 logger.info(client.get_ledger_info())
 logger.info(client.check_health())
