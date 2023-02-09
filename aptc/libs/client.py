@@ -138,7 +138,7 @@ class APTClient(BaseClient):
     def submit_transaction(self, txn_dict: Dict):
         return self.provider.post(
             APTTransactionsAPI.SUBMIT_TRANSACTION, params_dict=txn_dict,
-            headers=self.provider.DEFAULT_HEADERS
+            # headers=self.provider.DEFAULT_HEADERS
         )
 
     submit = submit_transaction
@@ -146,7 +146,7 @@ class APTClient(BaseClient):
     def submit_batch_transactions(self, batch_txn_dict: Dict):
         return self.provider.post(
             APTTransactionsAPI.SUBMIT_BATCH_TRANSACTIONS, params_dict=batch_txn_dict,
-            headers=self.provider.DEFAULT_HEADERS
+            # headers=self.provider.DEFAULT_HEADERS
         )
 
     submit_batch = submit_batch_transactions
