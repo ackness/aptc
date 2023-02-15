@@ -1,6 +1,6 @@
 # APTC: APTOS Client for Python
 
-![Version](https://img.shields.io/badge/aptc-v0.0.2-green)
+![Version](https://img.shields.io/badge/aptc-v0.0.3-green)
 ![GitHub Org's stars](https://img.shields.io/github/stars/ackness/aptc?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/ackness/aptc?style=social)
 ![Pypi](https://img.shields.io/pypi/dm/aptc)
