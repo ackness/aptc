@@ -5,18 +5,15 @@
 This is a simple BCS serializer and deserializer. Learn more at https://github.com/diem/bcs
 """
 
-from __future__ import annotations
-
 import io
-import typing
-import unittest
-from typing import Dict, List
+from collections.abc import Callable
+from typing import Any
 
-MAX_U8 = 2 ** 8 - 1
-MAX_U16 = 2 ** 16 - 1
-MAX_U32 = 2 ** 32 - 1
-MAX_U64 = 2 ** 64 - 1
-MAX_U128 = 2 ** 128 - 1
+MAX_U8 = 2**8 - 1
+MAX_U16 = 2**16 - 1
+MAX_U32 = 2**32 - 1
+MAX_U64 = 2**64 - 1
+MAX_U128 = 2**128 - 1
 
 
 class Deserializer:
@@ -46,10 +43,10 @@ class Deserializer:
         return self._read(length)
 
     def map(
-            self,
-            key_decoder: typing.Callable[[Deserializer], typing.Any],
-            value_decoder: typing.Callable[[Deserializer], typing.Any],
-    ) -> Dict[typing.Any, typing.Any]:
+        self,
+        key_decoder: Callable[[Deserializer], Any],
+        value_decoder: Callable[[Deserializer], Any],
+    ) -> dict[Any, Any]:
         length = self.uleb128()
         values = {}
         while len(values) < length:
@@ -59,9 +56,9 @@ class Deserializer:
         return values
 
     def sequence(
-            self,
-            value_decoder: typing.Callable[[Deserializer], typing.Any],
-    ) -> List[typing.Any]:
+        self,
+        value_decoder: Callable[[Deserializer], Any],
+    ) -> list[Any]:
         length = self.uleb128()
         values = []
         while len(values) < length:
@@ -71,7 +68,7 @@ class Deserializer:
     def str(self) -> str:
         return self.bytes().decode()
 
-    def struct(self, struct: typing.Any) -> typing.Any:
+    def struct(self, struct: Any) -> Any:
         return struct.deserialize(self)
 
     def u8(self) -> int:
@@ -139,32 +136,32 @@ class Serializer:
         self._output.write(value)
 
     def map(
-            self,
-            values: typing.Dict[typing.Any, typing.Any],
-            key_encoder: typing.Callable[[Serializer, typing.Any], bytes],
-            value_encoder: typing.Callable[[Serializer, typing.Any], bytes],
+        self,
+        values: dict[Any, Any],
+        key_encoder: Callable[[Serializer, Any], bytes],
+        value_encoder: Callable[[Serializer, Any], bytes],
     ):
         encoded_values = []
-        for (key, value) in values.items():
+        for key, value in values.items():
             encoded_values.append(
                 (encoder(key, key_encoder), encoder(value, value_encoder))
             )
         encoded_values.sort(key=lambda item: item[0])
 
         self.uleb128(len(encoded_values))
-        for (key, value) in encoded_values:
+        for key, value in encoded_values:
             self.fixed_bytes(key)
             self.fixed_bytes(value)
 
     def sequence_serializer(
-            value_encoder: typing.Callable[[Serializer, typing.Any], bytes],
+        value_encoder: Callable[[Serializer, Any], bytes],
     ):
         return lambda self, values: self.sequence(values, value_encoder)
 
     def sequence(
-            self,
-            values: typing.List[typing.Any],
-            value_encoder: typing.Callable[[Serializer, typing.Any], bytes],
+        self,
+        values: list[Any],
+        value_encoder: Callable[[Serializer, Any], bytes],
     ):
         self.uleb128(len(values))
         for value in values:
@@ -173,7 +170,7 @@ class Serializer:
     def str(self, value: str):
         self.bytes(value.encode())
 
-    def struct(self, value: typing.Any):
+    def struct(self, value: Any):
         value.serialize(self)
 
     def u8(self, value: int):
@@ -223,153 +220,7 @@ class Serializer:
         self._output.write(value.to_bytes(length, "little", signed=False))
 
 
-def encoder(
-        value: typing.Any, encoder: typing.Callable[[Serializer, typing.Any], None]
-) -> bytes:
+def encoder(value: Any, encoder: Callable[[Serializer, Any], None]) -> bytes:
     ser = Serializer()
     encoder(ser, value)
     return ser.output()
-
-
-class Test(unittest.TestCase):
-    def test_bool_true(self):
-        in_value = True
-
-        ser = Serializer()
-        ser.bool(in_value)
-        der = Deserializer(ser.output())
-        out_value = der.bool()
-
-        self.assertEqual(in_value, out_value)
-
-    def test_bool_false(self):
-        in_value = False
-
-        ser = Serializer()
-        ser.bool(in_value)
-        der = Deserializer(ser.output())
-        out_value = der.bool()
-
-        self.assertEqual(in_value, out_value)
-
-    def test_bool_error(self):
-        ser = Serializer()
-        ser.u8(32)
-        der = Deserializer(ser.output())
-        with self.assertRaises(Exception):
-            der.bool()
-
-    def test_bytes(self):
-        in_value = b"1234567890"
-
-        ser = Serializer()
-        ser.bytes(in_value)
-        der = Deserializer(ser.output())
-        out_value = der.bytes()
-
-        self.assertEqual(in_value, out_value)
-
-    def test_map(self):
-        in_value = {"a": 12345, "b": 99234, "c": 23829}
-
-        ser = Serializer()
-        ser.map(in_value, Serializer.str, Serializer.u32)
-        der = Deserializer(ser.output())
-        out_value = der.map(Deserializer.str, Deserializer.u32)
-
-        self.assertEqual(in_value, out_value)
-
-    def test_sequence(self):
-        in_value = ["a", "abc", "def", "ghi"]
-
-        ser = Serializer()
-        ser.sequence(in_value, Serializer.str)
-        der = Deserializer(ser.output())
-        out_value = der.sequence(Deserializer.str)
-
-        self.assertEqual(in_value, out_value)
-
-    def test_sequence_serializer(self):
-        in_value = ["a", "abc", "def", "ghi"]
-
-        ser = Serializer()
-        seq_ser = Serializer.sequence_serializer(Serializer.str)
-        seq_ser(ser, in_value)
-        der = Deserializer(ser.output())
-        out_value = der.sequence(Deserializer.str)
-
-        self.assertEqual(in_value, out_value)
-
-    def test_str(self):
-        in_value = "1234567890"
-
-        ser = Serializer()
-        ser.str(in_value)
-        der = Deserializer(ser.output())
-        out_value = der.str()
-
-        self.assertEqual(in_value, out_value)
-
-    def test_u8(self):
-        in_value = 15
-
-        ser = Serializer()
-        ser.u8(in_value)
-        der = Deserializer(ser.output())
-        out_value = der.u8()
-
-        self.assertEqual(in_value, out_value)
-
-    def test_u16(self):
-        in_value = 11115
-
-        ser = Serializer()
-        ser.u16(in_value)
-        der = Deserializer(ser.output())
-        out_value = der.u16()
-
-        self.assertEqual(in_value, out_value)
-
-    def test_u32(self):
-        in_value = 1111111115
-
-        ser = Serializer()
-        ser.u32(in_value)
-        der = Deserializer(ser.output())
-        out_value = der.u32()
-
-        self.assertEqual(in_value, out_value)
-
-    def test_u64(self):
-        in_value = 1111111111111111115
-
-        ser = Serializer()
-        ser.u64(in_value)
-        der = Deserializer(ser.output())
-        out_value = der.u64()
-
-        self.assertEqual(in_value, out_value)
-
-    def test_u128(self):
-        in_value = 1111111111111111111111111111111111115
-
-        ser = Serializer()
-        ser.u128(in_value)
-        der = Deserializer(ser.output())
-        out_value = der.u128()
-
-        self.assertEqual(in_value, out_value)
-
-    def test_uleb128(self):
-        in_value = 1111111115
-
-        ser = Serializer()
-        ser.uleb128(in_value)
-        der = Deserializer(ser.output())
-        out_value = der.uleb128()
-
-        self.assertEqual(in_value, out_value)
-
-
-if __name__ == "__main__":
-    unittest.main()

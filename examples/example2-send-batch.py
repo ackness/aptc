@@ -3,7 +3,7 @@ import time
 
 from loguru import logger
 
-from aptc import Account, APT, new_client
+from aptc import APT, Account, new_client
 from aptc.libs import build_transfer_payload
 
 # init logger
@@ -11,9 +11,9 @@ logger.add("example2.log")
 
 client = new_client()
 
-# submit transaction
+# submit a batch transaction
 # load your private key
-account = Account.load_key(os.environ['private_key'])
+account = Account.load_key(os.environ["private_key"])
 account_address = account.address()
 receiver_address = "0x8d763223180a2b92f97755a3ea581f1c68d342275ca6118badff663f57aca7a5"
 
@@ -25,11 +25,11 @@ txn_dict = {
     "sequence_number": str(client.get_account_sequence_number(account_address)),
     "max_gas_amount": str(100_000),
     "gas_unit_price": str(100),
-    "expiration_timestamp_secs": str(int(time.time()) + 100),
+    "expiration_timestamp_secs": str(int(time.time()) + 600),
     "payload": [payload_1, payload_2],
 }
 # encode this transaction
-encoded = client.encode(txn_dict)
+encoded = client.encode_submission(txn_dict)
 # sign this transaction
 signature = account.sign(encoded)
 
@@ -41,3 +41,4 @@ txn_dict["signature"] = {
 
 # submit transaction
 tx = client.submit_transaction(txn_dict)
+logger.info(tx)

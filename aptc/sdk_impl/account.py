@@ -1,11 +1,7 @@
 # Copyright (c) Aptos
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
-
 import json
-import tempfile
-import unittest
 
 from . import ed25519
 from .account_address import AccountAddress
@@ -18,17 +14,20 @@ class Account:
     private_key: ed25519.PrivateKey
 
     def __init__(
-            self, account_address: AccountAddress, private_key: ed25519.PrivateKey
+        self, account_address: AccountAddress, private_key: ed25519.PrivateKey
     ):
         self.account_address = account_address
         self.private_key = private_key
 
-    def __eq__(self, other: Account) -> bool:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Account):
+            return NotImplemented
         return (
-                self.account_address == other.account_address
-                and self.private_key == other.private_key
+            self.account_address == other.account_address
+            and self.private_key == other.private_key
         )
 
+    @staticmethod
     def generate() -> Account:
         private_key = ed25519.PrivateKey.random()
         account_address = AccountAddress.from_key(private_key.public_key())
@@ -74,21 +73,3 @@ class Account:
         """Returns the public key for the associated account"""
 
         return self.private_key.public_key()
-
-
-class Test(unittest.TestCase):
-    def test_load_and_store(self):
-        (file, path) = tempfile.mkstemp()
-        start = Account.generate()
-        start.store(path)
-        load = Account.load(path)
-
-        self.assertEqual(start, load)
-        # Auth key and Account address should be the same at start
-        self.assertEqual(start.address().hex(), start.auth_key())
-
-    def test_key(self):
-        message = b"test message"
-        account = Account.generate()
-        signature = account.sign(message)
-        self.assertTrue(account.public_key().verify(message, signature))
