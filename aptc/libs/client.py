@@ -1,6 +1,6 @@
 import time
 
-from httpx import Response
+from httpx import Response, TimeoutException
 
 from ._types import Address, IntNumber, TXHash
 from .apis import (
@@ -237,10 +237,18 @@ class APTClient(BaseClient):
 
     get_txn_by_hash = get_transaction_by_hash
 
-    def wait_transaction_by_hash(self, txn_hash: TXHash) -> dict:
-        """Long-poll variant of `get_transaction_by_hash` (Node API v1.1+)."""
+    def wait_transaction_by_hash(
+        self, txn_hash: TXHash, timeout: float | None = None
+    ) -> dict:
+        """Long-poll variant of `get_transaction_by_hash` (Node API v1.1+).
+
+        `timeout` is this single poll's HTTP read timeout; None uses the
+        provider default.
+        """
+        kwargs = {"timeout": timeout} if timeout is not None else {}
         return self.provider.get(
-            APTTransactionsAPI.WAIT_TRANSACTION_BY_HASH.format(txn_hash=txn_hash)
+            APTTransactionsAPI.WAIT_TRANSACTION_BY_HASH.format(txn_hash=txn_hash),
+            **kwargs,
         )
 
     wait_txn_by_hash = wait_transaction_by_hash
@@ -382,18 +390,26 @@ class APTClient(BaseClient):
         Uses the `transactions/wait_by_hash` long-poll endpoint when available.
         Returns the committed transaction, raising on failure or timeout.
         """
-        deadline = time.time() + timeout
+        deadline = time.monotonic() + timeout
         while True:
-            txn = self.wait_transaction_by_hash(txn_hash)
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError(f"transaction {txn_hash} timed out")
+            try:
+                # The node holds the poll open; bound the read timeout to the
+                # remaining deadline (plus a small grace) rather than the HTTP
+                # client's shorter default.
+                txn = self.wait_transaction_by_hash(txn_hash, timeout=remaining + 5.0)
+            except TimeoutException:
+                # a poll timing out means the transaction is still pending
+                txn = {"type": "pending_transaction"}
             if "type" not in txn:
                 # not found yet (e.g. just submitted), keep polling
                 txn = {"type": "pending_transaction"}
             if txn["type"] != "pending_transaction":
                 assert txn.get("success", False), f"{txn} - {txn_hash}"
                 return txn
-            if time.time() >= deadline:
-                raise TimeoutError(f"transaction {txn_hash} timed out")
-            time.sleep(poll_interval)
+            time.sleep(min(poll_interval, max(deadline - time.monotonic(), 0.0)))
 
 
 class APTDevClient(APTClient):

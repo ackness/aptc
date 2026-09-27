@@ -33,18 +33,18 @@ class HttpxAsyncProvider(BaseProvider):
         except Exception:
             pass
 
-    async def _get(self, api: str = "", params: dict | None = None):
+    async def _get(self, api: str = "", params: dict | None = None, **kwargs):
         f = self.patch_url(api)
-        response = await self.client.get(url=f, params=params)
+        response = await self.client.get(url=f, params=params, **kwargs)
         return response.json()
 
-    async def _post(self, api: str = "", params: dict | None = None):
+    async def _post(self, api: str = "", params: dict | None = None, **kwargs):
         f = self.patch_url(api)
-        response = await self.client.post(url=f, json=params)
+        response = await self.client.post(url=f, json=params, **kwargs)
         return response.json()
 
-    def get(self, api: str = "", params_dict: dict | None = None):
-        return self.loop.run_until_complete(self._get(api, params_dict))
+    def get(self, api: str = "", params_dict: dict | None = None, **kwargs):
+        return self.loop.run_until_complete(self._get(api, params_dict, **kwargs))
 
-    def post(self, api: str = "", params_dict: dict | None = None):
-        return self.loop.run_until_complete(self._post(api, params_dict))
+    def post(self, api: str = "", params_dict: dict | None = None, **kwargs):
+        return self.loop.run_until_complete(self._post(api, params_dict, **kwargs))

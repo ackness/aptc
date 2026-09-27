@@ -1,6 +1,7 @@
 """Offline tests for request path building and client plumbing."""
 
 import pytest
+from httpx import ReadTimeout
 
 from aptc import APTClient, HttpxProvider, new_client
 from aptc.libs.utils import build_transfer_payload
@@ -14,10 +15,20 @@ class RecordingProvider:
 
     def __init__(self):
         self.calls = []
+        self.call_kwargs = []
         self.client = None
+        # api substring -> queue of scripted responses or exceptions
+        self.results = {}
 
     def get(self, api="", params_dict=None, **kwargs):
         self.calls.append(("GET", api, params_dict))
+        self.call_kwargs.append(kwargs)
+        for key, results in self.results.items():
+            if key in api and results:
+                result = results.pop(0)
+                if isinstance(result, Exception):
+                    raise result
+                return result
         if "/balance/" in api:
             return "0"
         return {}
@@ -127,6 +138,38 @@ def test_new_client_faucet_defaults_to_devnet():
 def test_api_key_sets_bearer_header():
     provider = HttpxProvider("https://api.mainnet.aptoslabs.com/v1", api_key="secret")
     assert provider.client.headers["Authorization"] == "Bearer secret"
+
+
+def test_wait_for_transaction_bounds_poll_read_timeout(client):
+    # wait_by_hash is a server-held long poll: each poll gets a read timeout
+    # bounded by the deadline instead of the HTTP client's shorter default.
+    client.provider.results["wait_by_hash"] = [
+        {"type": "user_transaction", "success": True}
+    ]
+    txn = client.wait_for_transaction("0xabc", timeout=30, poll_interval=0)
+    assert txn["type"] == "user_transaction"
+    assert client.provider.calls[-1] == (
+        "GET",
+        "transactions/wait_by_hash/0xabc",
+        None,
+    )
+    assert client.provider.call_kwargs[-1]["timeout"] > 5.0
+
+
+def test_wait_for_transaction_poll_timeout_is_still_pending(client):
+    client.provider.results["wait_by_hash"] = [
+        ReadTimeout("read timed out"),
+        ReadTimeout("read timed out"),
+        {"type": "user_transaction", "success": True},
+    ]
+    txn = client.wait_for_transaction("0xabc", timeout=30, poll_interval=0)
+    assert txn["success"] is True
+
+
+def test_wait_for_transaction_times_out(client):
+    # provider returns {} (not found) forever -> TimeoutError, not a hang
+    with pytest.raises(TimeoutError):
+        client.wait_for_transaction("0xabc", timeout=0.01, poll_interval=0)
 
 
 def test_build_transfer_payload():
