@@ -4,10 +4,15 @@ class APTAccountAPI:
     GET_ACCOUNT_RESOURCES = "accounts/{address}/resources"
     GET_ACCOUNT_RESOURCE = "accounts/{address}/resource/{resource_type}"
     GET_ACCOUNT_MODULES = "accounts/{address}/modules"
-    GET_ACCOUNT_MODULE = "accounts/{address}/modules/{module_name}"
+    GET_ACCOUNT_MODULE = "accounts/{address}/module/{module_name}"
 
-    # specific api
-    GET_ACCOUNT_BALANCE = "accounts/{address}/resource/0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>"
+    # Coin or fungible-asset balance of the primary store
+    GET_ACCOUNT_BALANCE_BY_TYPE = "accounts/{address}/balance/{asset_type}"
+
+    # legacy CoinStore resource (kept for backwards compatibility)
+    GET_ACCOUNT_BALANCE = (
+        "accounts/{address}/resource/0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>"
+    )
 
 
 class APTBlockAPI:
@@ -22,21 +27,30 @@ class APTEventAPI:
 
 class APTGeneralAPI:
     SHOW_OPENAPI_EXPLORER = "spec"
-    CHECK_NODE_HEALTH = '-/healthy'
+    CHECK_NODE_HEALTH = "-/healthy"
+    GET_NODE_INFO = "info"
     GET_LEDGER_INFO = ""
 
 
 class APTTablesAPI:
     GET_TABLE_ITEM = "tables/{table_handle}/item"
+    GET_TABLE_ITEM_RAW = "tables/{table_handle}/raw_item"
 
 
 class APTTransactionsAPI:
     GET_TRANSACTIONS = "transactions"  # GET
     SUBMIT_TRANSACTION = "transactions"  # POST
     GET_TRANSACTION_BY_HASH = "transactions/by_hash/{txn_hash}"
+    WAIT_TRANSACTION_BY_HASH = "transactions/wait_by_hash/{txn_hash}"
     GET_TRANSACTION_BY_VERSION = "transactions/by_version/{txn_version}"
     GET_ACCOUNT_TRANSACTIONS = "accounts/{address}/transactions"
+    GET_ACCOUNT_TRANSACTION_SUMMARIES = "accounts/{address}/transaction_summaries"
+    GET_TRANSACTIONS_AUXILIARY_INFO = "transactions/auxiliary_info"  # GET
     SUBMIT_BATCH_TRANSACTIONS = "transactions/batch"  # POST
     SIMULATE_TRANSACTION = "transactions/simulate"  # POST
     ENCODE_SUBMISSION = "transactions/encode_submission"  # POST
     ESTIMATE_GAS_PRICE = "estimate_gas_price"
+
+
+class APTViewAPI:
+    VIEW_FUNCTION = "view"  # POST

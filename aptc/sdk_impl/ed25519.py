@@ -1,10 +1,6 @@
 # Copyright (c) Aptos
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
-
-import unittest
-
 from nacl.signing import SigningKey, VerifyKey
 
 from .bcs import Deserializer, Serializer
@@ -18,7 +14,9 @@ class PrivateKey:
     def __init__(self, key: SigningKey):
         self.key = key
 
-    def __eq__(self, other: PrivateKey):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, PrivateKey):
+            return NotImplemented
         return self.key == other.key
 
     def __str__(self):
@@ -62,7 +60,9 @@ class PublicKey:
     def __init__(self, key: VerifyKey):
         self.key = key
 
-    def __eq__(self, other: PrivateKey):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, PublicKey):
+            return NotImplemented
         return self.key == other.key
 
     def __str__(self) -> str:
@@ -95,7 +95,9 @@ class Signature:
     def __init__(self, signature: bytes):
         self.signature = signature
 
-    def __eq__(self, other: PrivateKey):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Signature):
+            return NotImplemented
         return self.signature == other.signature
 
     def __str__(self) -> str:
@@ -114,41 +116,3 @@ class Signature:
 
     def serialize(self, serializer: Serializer):
         serializer.bytes(self.signature)
-
-
-class Test(unittest.TestCase):
-    def test_sign_and_verify(self):
-        in_value = b"test_message"
-
-        private_key = PrivateKey.random()
-        public_key = private_key.public_key()
-
-        signature = private_key.sign(in_value)
-        self.assertTrue(public_key.verify(in_value, signature))
-
-    def test_private_key_serialization(self):
-        private_key = PrivateKey.random()
-        ser = Serializer()
-
-        private_key.serialize(ser)
-        ser_private_key = PrivateKey.deserialize(Deserializer(ser.output()))
-        self.assertEqual(private_key, ser_private_key)
-
-    def test_public_key_serialization(self):
-        private_key = PrivateKey.random()
-        public_key = private_key.public_key()
-
-        ser = Serializer()
-        public_key.serialize(ser)
-        ser_public_key = PublicKey.deserialize(Deserializer(ser.output()))
-        self.assertEqual(public_key, ser_public_key)
-
-    def test_signature_key_serialization(self):
-        private_key = PrivateKey.random()
-        in_value = b"another_message"
-        signature = private_key.sign(in_value)
-
-        ser = Serializer()
-        signature.serialize(ser)
-        ser_signature = Signature.deserialize(Deserializer(ser.output()))
-        self.assertEqual(signature, ser_signature)

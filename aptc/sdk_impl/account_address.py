@@ -1,8 +1,6 @@
 # Copyright (c) Aptos
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
-
 import hashlib
 
 from . import ed25519
@@ -19,7 +17,9 @@ class AccountAddress:
         if len(address) != AccountAddress.LENGTH:
             raise Exception("Expected address of length 32")
 
-    def __eq__(self, other: AccountAddress) -> bool:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, AccountAddress):
+            return NotImplemented
         return self.address == other.address
 
     def __str__(self):
